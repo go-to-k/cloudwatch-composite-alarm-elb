@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+# ------------------------------------------------------------#
+#  Metadata
+# ------------------------------------------------------------#
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "LoadBalancerFullName"
+        Parameters:
+          - LoadBalancerFullName
+      - Label:
+          default: "SNSTopicArn"
+        Parameters:
+          - SNSTopicArn
+
+# ------------------------------------------------------------#
+#  Parameters
+# ------------------------------------------------------------#
+Parameters:
+  LoadBalancerFullName:
+    Type: String
+
+  SNSTopicArn:
+    Type: String
+
+# ------------------------------------------------------------#
+#  Resources
+# ------------------------------------------------------------#
+Resources:
+  # ============================================== #
+  # HTTPCodeELBOther5XXCount (Composite Alarm)
+  # ============================================== #
+  ### 5XXがアラーム状態で、500,502,503,504がOK状態のとき(それ以外の5系)に発火
+  HTTPCodeELBOther5XXCountAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: ALB-HTTPCodeELBOther5XXCount-Alarm
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref SNSTopicArn
+      AlarmRule: !Sub "ALARM(${HTTPCodeELB5XXCountAlarm}) AND NOT (ALARM(${HTTPCodeELB500CountAlarm}) OR ALARM(${HTTPCodeELB502CountAlarm}) OR ALARM(${HTTPCodeELB503CountAlarm}) OR ALARM(${HTTPCodeELB504CountAlarm}))"
+
+  # ============================================== #
+  # HTTPCodeELB5XXCount from metrics
+  # ============================================== #
+  HTTPCodeELB5XXCountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ALB-HTTPCodeELB5XXCount-Alarm
+      ActionsEnabled: false ### 500,502,503,504との複合アラームでの通知をするのでこちらではAction=false
+      AlarmActions:
+        - !Ref SNSTopicArn
+      MetricName: HTTPCode_ELB_5XX_Count
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerFullName
+      Statistic: "Sum"
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ============================================== #
+  # HTTPCodeELB500Count from metrics
+  # ============================================== #
+  HTTPCodeELB500CountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ALB-HTTPCodeELB500Count-Alarm
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref SNSTopicArn
+      MetricName: HTTPCode_ELB_500_Count
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerFullName
+      Statistic: "Sum"
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ============================================== #
+  # HTTPCodeELB502Count from metrics
+  # ============================================== #
+  HTTPCodeELB502CountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ALB-HTTPCodeELB502Count-Alarm
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref SNSTopicArn
+      MetricName: HTTPCode_ELB_502_Count
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerFullName
+      Statistic: "Sum"
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ============================================== #
+  # HTTPCodeELB503Count from metrics
+  # ============================================== #
+  HTTPCodeELB503CountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ALB-HTTPCodeELB503Count-Alarm
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref SNSTopicArn
+      MetricName: HTTPCode_ELB_503_Count
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerFullName
+      Statistic: "Sum"
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ============================================== #
+  # HTTPCodeELB504Count from metrics
+  # ============================================== #
+  HTTPCodeELB504CountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: ALB-HTTPCodeELB504Count-Alarm
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref SNSTopicArn
+      MetricName: HTTPCode_ELB_504_Count
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref LoadBalancerFullName
+      Statistic: "Sum"
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
